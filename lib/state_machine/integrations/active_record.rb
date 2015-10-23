@@ -426,7 +426,14 @@ module StateMachine
         require 'active_record/version'
         super
       end
-      
+    
+      # Runs state events around the machine's :save action
+      def around_save(object)
+        transaction(object) do
+          object.class.state_machines.transitions(object, action).perform { yield }
+        end
+      end
+
       protected
         # Only runs validations on the action if using <tt>:save</tt>
         def runs_validations_on_action?
@@ -444,8 +451,14 @@ module StateMachine
         # initial state of the machine *before* any attributes are set on the
         # object
         def define_state_initializer
-          define_static_state_initializer
-          define_dynamic_state_initializer
+          define_helper :instance, <<-end_eval, __FILE__, __LINE__ + 1
+            def initialize(*)
+              super do |*args|
+                self.class.state_machines.initialize_states self
+                yield(*args) if block_given?
+              end
+            end
+          end_eval
         end
         
         # Initializes static states
@@ -496,12 +509,6 @@ module StateMachine
           end
         end
         
-        # Runs state events around the machine's :save action
-        def around_save(object)
-          transaction(object) do
-            object.class.state_machines.transitions(object, action).perform { yield }
-          end
-        end
         
         # Creates a scope for finding records *with* a particular state or
         # states for the attribute
