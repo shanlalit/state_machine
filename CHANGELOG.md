@@ -1,5 +1,8 @@
 # master
 
+## 1.2.2 / 2024-03-27
+
+* Ruby 3.1 compatibility
 * Raise InvalidContext error when the current state does not define a state-driven behavior
 * Fix target state being indeterminate for transitions that use blacklists
 * Allow super to be called within state-driven behaviors
